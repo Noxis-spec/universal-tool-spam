@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-11-02
+
+### Fixed
+- **Tool selection no longer resets** when the selected tool temporarily disappears from the inventory (e.g. dropped on death, moved between Backpack and Character). The choice is remembered until the user manually selects another tool.
+- **Selected tool is now highlighted** in blue inside the dropdown, so it's always visible which tool is active.
+- **Toggle button shows `SPAM: ON (waiting)`** when spam is enabled but the selected tool is temporarily unavailable — no more confusion between "script stopped" and "script waiting for tool".
+
+### Changed
+- `selectedToolName` is now stored outside the character lifecycle and survives respawn.
+- `scanTools()` no longer clears the selection when a tool is missing; it only removes the button from the list.
+
 ## [1.1.0] - 2026-11-02
 
 ### Added
