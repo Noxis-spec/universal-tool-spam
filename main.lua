@@ -1,62 +1,198 @@
-# Universal Mobile Tool Spammer and Autoclicker
+local SPAM_SPEED = 0.0001
+local enabled = false
+local currentToolName = nil
+local menuOpen = false
 
-A lightweight, ultra-fast universal script designed for Roblox Mobile executors such as Delta, Arceus X, Codex, and Fluxus. It automatically scans the player's inventory and spams any selected tool at the maximum possible engine speed.
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local lp = Players.LocalPlayer
 
----
+-- Ждем полной прогрузки интерфейса игрока
+local playerGui = lp:WaitForChild("PlayerGui")
 
-## Primary Purpose
+-- Инициализация графической библиотеки элементов
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = playerGui -- Использование PlayerGui вместо CoreGui для совместимости с Delta/Arceus
+ScreenGui.Name = "UniversalSpamLibraryUI"
+ScreenGui.ResetOnSpawn = false -- Меню не пропадет после смерти персонажа
 
-* **Wall Clipping and Glitching**
-  This script is specifically designed to help players pass through walls and solid objects (wall clip) in various Roblox games by utilizing high-speed tool equipping and unequipping mechanics.
+-- Главный контейнер
+local MainHolder = Instance.new("Frame")
+MainHolder.Parent = ScreenGui
+MainHolder.Size = UDim2.new(0, 130, 0, 45)
+MainHolder.Position = UDim2.new(0.3, 0, 0.4, 0) -- Сдвинул чуть правее от левого края дисплея
+MainHolder.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainHolder.BorderSizePixel = 0
+MainHolder.Active = true
+MainHolder.Draggable = true 
 
----
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.Parent = MainHolder
 
-## Core Features
+-- Главная кнопка спама
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Parent = MainHolder
+ToggleButton.Size = UDim2.new(1, -35, 1, 0)
+ToggleButton.Position = UDim2.new(0, 0, 0, 0)
+ToggleButton.BackgroundTransparency = 1
+ToggleButton.Text = "SPAM: OFF"
+ToggleButton.TextColor3 = Color3.fromRGB(235, 75, 75)
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.TextSize = 16
 
-* **Maximum Engine Speed**
-  The spam interval is set to the absolute engine limit of 0.0001 seconds for instant execution and reliable glitching.
+-- Кнопка стрелочки
+local DropdownArrow = Instance.new("TextButton")
+DropdownArrow.Parent = MainHolder
+DropdownArrow.Size = UDim2.new(0, 35, 1, 0)
+DropdownArrow.Position = UDim2.new(1, -35, 0, 0)
+DropdownArrow.BackgroundTransparency = 1
+DropdownArrow.Text = "▼"
+DropdownArrow.TextColor3 = Color3.fromRGB(200, 200, 200)
+DropdownArrow.Font = Enum.Font.SourceSansBold
+DropdownArrow.TextSize = 14
 
-* **Live Inventory Scanner**
-  The script automatically scans the backpack every second, dynamically adding new tools and removing dropped ones.
+-- Выдвижное меню
+local DropdownMenu = Instance.new("Frame")
+DropdownMenu.Parent = MainHolder
+DropdownMenu.Size = UDim2.new(1, 0, 0, 0)
+DropdownMenu.Position = UDim2.new(0, 0, 0, 48)
+DropdownMenu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+DropdownMenu.BorderSizePixel = 0
+DropdownMenu.ClipsDescendants = true
 
-* **Dropdown Tool Selector**
-  Features a highly compact user interface. Tapping the arrow expands the list to select a tool, then hides it to save screen space.
+local MenuCorner = Instance.new("UICorner")
+MenuCorner.CornerRadius = UDim.new(0, 8)
+MenuCorner.Parent = DropdownMenu
 
-* **Mobile Optimized Layout**
-  Includes smooth UI drag mechanics that do not interfere with the movement joystick or character control.
+-- Скролл-зона
+local ScrollList = Instance.new("ScrollingFrame")
+ScrollList.Parent = DropdownMenu
+ScrollList.Size = UDim2.new(1, -10, 1, -30)
+ScrollList.Position = UDim2.new(0, 5, 0, 5)
+ScrollList.BackgroundTransparency = 1
+ScrollList.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollList.ScrollBarThickness = 2
+ScrollList.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
 
-* **Universal Compatibility**
-  Works flawlessly in any Roblox game that utilizes standard tools, including simulators, RPGs, and fighting games.
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = ScrollList
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 4)
 
----
+-- Текст статуса выбранного предмета
+local InfoText = Instance.new("TextLabel")
+InfoText.Parent = DropdownMenu
+InfoText.Size = UDim2.new(1, 0, 0, 20)
+InfoText.Position = UDim2.new(0, 0, 1, -22)
+InfoText.BackgroundTransparency = 1
+InfoText.Text = "Target: None"
+InfoText.TextColor3 = Color3.fromRGB(180, 180, 180)
+InfoText.Font = Enum.Font.SourceSansItalic
+InfoText.TextSize = 12
 
-## Installation and Usage
+-- Библиотечный аниматор выдвижения меню
+local function toggleMenu()
+    menuOpen = not menuOpen
+    local targetSize = menuOpen and UDim2.new(1, 0, 0, 150) or UDim2.new(1, 0, 0, 0)
+    DropdownArrow.Text = menuOpen and "▲" or "▼"
+    
+    local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(DropdownMenu, tweenInfo, {Size = targetSize})
+    tween:Play()
+end
 
-1. Copy the source code from the `main.lua` file.
-2. Paste the script into your mobile executor of choice.
-3. Press Execute.
-4. Tap the dropdown arrow to select a tool from your current inventory.
-5. Toggle the main button to SPAM: ON.
+DropdownArrow.MouseButton1Click:Connect(toggleMenu)
 
----
+-- Функция полной библиотеки обновления списка предметов
+local function updateInventoryList()
+    local currentButtons = {}
+    local addedTools = {}
 
-## Changelog
+    local backpack = lp:FindFirstChild("Backpack")
+    if backpack then
+        for _, tool in pairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") then addedTools[tool.Name] = true end
+        end
+    end
+    
+    if lp.Character then
+        local equippedTool = lp.Character:FindFirstChildOfClass("Tool")
+        if equippedTool then addedTools[equippedTool.Name] = true end
+    end
 
-### Version 1.1.0
-* Integrated full UI library with smooth animations using `TweenService`.
-* Added rounded corners (`UICorner`) to all buttons and dropdown menus for a modern mobile look.
-* Optimized color indicators: text transitions between green (ON) and red (OFF).
+    for _, child in pairs(ScrollList:GetChildren()) do
+        if child:IsA("TextButton") then
+            if not addedTools[child.Text] then
+                child:Destroy()
+            else
+                currentButtons[child.Text] = true
+            end
+        end
+    end
 
-### Version 1.0.0
-* Initial release of the universal tool spammer.
-* Added live inventory scanning every second (`task.wait(1)`).
-* Implemented compact toggle button with expandable tool list.
-* Specifically optimized for mobile executors and wall-clipping glitches.
+    for toolName, _ in pairs(addedTools) do
+        if not currentButtons[toolName] then
+            local ItemBtn = Instance.new("TextButton")
+            ItemBtn.Parent = ScrollList
+            ItemBtn.Size = UDim2.new(1, 0, 0, 25)
+            ItemBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            ItemBtn.Text = toolName
+            ItemBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
+            ItemBtn.Font = Enum.Font.SourceSans
+            ItemBtn.TextSize = 13
+            
+            local BtnCorner = Instance.new("UICorner")
+            BtnCorner.CornerRadius = UDim.new(0, 4)
+            BtnCorner.Parent = ItemBtn
+            
+            ItemBtn.MouseButton1Click:Connect(function()
+                currentToolName = toolName
+                InfoText.Text = "Target: " .. toolName
+                toggleMenu()
+            end)
+        end
+    end
+    ScrollList.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y)
+end
 
----
+-- Ежесекундный фоновый процесс
+task.spawn(function()
+    while true do
+        pcall(updateInventoryList)
+        task.wait(1)
+    end
+end)
 
-## License
+-- Логика переключения режима спама
+ToggleButton.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    if enabled then
+        ToggleButton.TextColor3 = Color3.fromRGB(75, 235, 75)
+        ToggleButton.Text = "SPAM: ON"
+    else
+        ToggleButton.TextColor3 = Color3.fromRGB(235, 75, 75)
+        ToggleButton.Text = "SPAM: OFF"
+    end
+end)
 
-This project is licensed under the MIT License. You are free to modify, distribute, and build upon this code.
-
-Developed by Noxis-spec
+-- Основной цикл ультра-кликера предметов
+task.spawn(function()
+    while true do
+        if enabled and currentToolName then
+            local character = lp.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            local backpack = lp:FindFirstChild("Backpack")
+            
+            if humanoid and backpack then
+                local tool = backpack:FindFirstChild(currentToolName)
+                if tool then
+                    humanoid:EquipTool(tool)
+                end
+                task.wait(SPAM_SPEED)
+                humanoid:UnequipTools()
+            end
+        end
+        task.wait(SPAM_SPEED)
+    end
+end)
