@@ -1,6 +1,7 @@
 -- universal-tool-spam / main.lua
 -- Refactored for mobile (Delta, Arceus X, Codex)
--- Features: object pool, anti-AFK, speed slider, respawn-safe, draggable GUI
+-- Features: object pool, anti-AFK, speed slider, respawn-safe, draggable GUI,
+--           persistent tool selection (remembered until changed manually)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -13,6 +14,8 @@ local lp = Players.LocalPlayer
 local SPAM_SPEED = 0.0001
 local SCAN_INTERVAL = 1.0
 local DRAG_THRESHOLD = 10
+local COLOR_BTN_IDLE = Color3.fromRGB(45, 45, 52)
+local COLOR_BTN_SELECTED = Color3.fromRGB(0, 120, 200)
 -- ================================================
 
 -- ---------- Anti-AFK ----------
@@ -299,6 +302,17 @@ arrowBtn.MouseButton1Click:Connect(function()
     setDropdownOpen(not dropdownOpen)
 end)
 
+-- ---------- Highlight Helper ----------
+local function updateSelectionHighlight()
+    for name, btn in pairs(toolButtons) do
+        if name == selectedToolName then
+            btn.BackgroundColor3 = COLOR_BTN_SELECTED
+        else
+            btn.BackgroundColor3 = COLOR_BTN_IDLE
+        end
+    end
+end
+
 -- ---------- Tool Button Pool ----------
 local function getOrCreateButton(toolName, layoutOrder)
     local btn = buttonPool[#buttonPool]
@@ -307,7 +321,7 @@ local function getOrCreateButton(toolName, layoutOrder)
     else
         btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, -4, 0, 26)
-        btn.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+        btn.BackgroundColor3 = COLOR_BTN_IDLE
         btn.TextColor3 = Color3.fromRGB(220, 220, 230)
         btn.Font = Enum.Font.Gotham
         btn.TextSize = 11
@@ -322,6 +336,7 @@ local function getOrCreateButton(toolName, layoutOrder)
             local name = btn:GetAttribute("ToolName")
             if name then
                 selectedToolName = name
+                updateSelectionHighlight()
                 toggleBtn.Text = "SPAM: " .. (enabled and "ON" or "OFF")
                 setDropdownOpen(false)
             end
@@ -332,16 +347,19 @@ local function getOrCreateButton(toolName, layoutOrder)
     btn.LayoutOrder = layoutOrder
     btn.Visible = true
     btn:SetAttribute("ToolName", toolName)
+    btn.BackgroundColor3 = (toolName == selectedToolName)
+        and COLOR_BTN_SELECTED or COLOR_BTN_IDLE
     return btn
 end
 
 local function releaseButton(btn)
     btn.Visible = false
     btn:SetAttribute("ToolName", nil)
+    btn.BackgroundColor3 = COLOR_BTN_IDLE
     table.insert(buttonPool, btn)
 end
 
--- ---------- Tool Scanning ----------
+-- ---------- Tool Scanning (selection is NOT reset) ----------
 local function scanTools()
     local char = lp.Character
     if not char then return end
@@ -371,11 +389,18 @@ local function scanTools()
         if not currentSet[name] then
             releaseButton(btn)
             toolButtons[name] = nil
-            if selectedToolName == name then
-                selectedToolName = nil
-                enabled = false
-                toggleBtn.Text = "SPAM: OFF"
-            end
+            -- selectedToolName НЕ сбрасываем: выбор запоминается навсегда
+        end
+    end
+
+    updateSelectionHighlight()
+
+    -- Статус кнопки: если выбранный предмет недоступен — показываем ожидание
+    if selectedToolName then
+        if currentSet[selectedToolName] then
+            toggleBtn.Text = "SPAM: " .. (enabled and "ON" or "OFF")
+        else
+            toggleBtn.Text = enabled and "SPAM: ON (waiting)" or "SPAM: OFF"
         end
     end
 end
@@ -422,7 +447,6 @@ end
 toggleBtn.MouseButton1Click:Connect(function()
     if dragging then return end
     enabled = not enabled
-    toggleBtn.Text = "SPAM: " .. (enabled and "ON" or "OFF")
 
     if enabled then
         if not selectedToolName then
@@ -430,7 +454,10 @@ toggleBtn.MouseButton1Click:Connect(function()
             toggleBtn.Text = "SPAM: OFF"
             return
         end
+        toggleBtn.Text = "SPAM: ON"
         startSpamLoop()
+    else
+        toggleBtn.Text = "SPAM: OFF"
     end
 end)
 
