@@ -7,20 +7,16 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local lp = Players.LocalPlayer
 
--- Ждем полной прогрузки интерфейса игрока
-local playerGui = lp:WaitForChild("PlayerGui")
-
 -- Инициализация графической библиотеки элементов
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = playerGui -- Использование PlayerGui вместо CoreGui для совместимости с Delta/Arceus
+ScreenGui.Parent = game:GetService("CoreGui")
 ScreenGui.Name = "UniversalSpamLibraryUI"
-ScreenGui.ResetOnSpawn = false -- Меню не пропадет после смерти персонажа
 
--- Главный контейнер
+-- Главный контейнер (С закруглением углов)
 local MainHolder = Instance.new("Frame")
 MainHolder.Parent = ScreenGui
 MainHolder.Size = UDim2.new(0, 130, 0, 45)
-MainHolder.Position = UDim2.new(0.3, 0, 0.4, 0) -- Сдвинул чуть правее от левого края дисплея
+MainHolder.Position = UDim2.new(0.1, 0, 0.4, 0)
 MainHolder.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainHolder.BorderSizePixel = 0
 MainHolder.Active = true
@@ -41,7 +37,7 @@ ToggleButton.TextColor3 = Color3.fromRGB(235, 75, 75)
 ToggleButton.Font = Enum.Font.SourceSansBold
 ToggleButton.TextSize = 16
 
--- Кнопка стрелочки
+-- Кнопка стрелочки открытия списка предметов
 local DropdownArrow = Instance.new("TextButton")
 DropdownArrow.Parent = MainHolder
 DropdownArrow.Size = UDim2.new(0, 35, 1, 0)
@@ -52,7 +48,7 @@ DropdownArrow.TextColor3 = Color3.fromRGB(200, 200, 200)
 DropdownArrow.Font = Enum.Font.SourceSansBold
 DropdownArrow.TextSize = 14
 
--- Выдвижное меню
+-- Выдвижное меню (Панель списка)
 local DropdownMenu = Instance.new("Frame")
 DropdownMenu.Parent = MainHolder
 DropdownMenu.Size = UDim2.new(1, 0, 0, 0)
@@ -65,7 +61,7 @@ local MenuCorner = Instance.new("UICorner")
 MenuCorner.CornerRadius = UDim.new(0, 8)
 MenuCorner.Parent = DropdownMenu
 
--- Скролл-зона
+-- Скролл-зона для кнопок предметов
 local ScrollList = Instance.new("ScrollingFrame")
 ScrollList.Parent = DropdownMenu
 ScrollList.Size = UDim2.new(1, -10, 1, -30)
@@ -91,7 +87,7 @@ InfoText.TextColor3 = Color3.fromRGB(180, 180, 180)
 InfoText.Font = Enum.Font.SourceSansItalic
 InfoText.TextSize = 12
 
--- Библиотечный аниматор выдвижения меню
+-- Библиотечный аниматор выдвижения меню (Tween Engine)
 local function toggleMenu()
     menuOpen = not menuOpen
     local targetSize = menuOpen and UDim2.new(1, 0, 0, 150) or UDim2.new(1, 0, 0, 0)
@@ -109,11 +105,8 @@ local function updateInventoryList()
     local currentButtons = {}
     local addedTools = {}
 
-    local backpack = lp:FindFirstChild("Backpack")
-    if backpack then
-        for _, tool in pairs(backpack:GetChildren()) do
-            if tool:IsA("Tool") then addedTools[tool.Name] = true end
-        end
+    for _, tool in pairs(lp.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then addedTools[tool.Name] = true end
     end
     
     if lp.Character then
@@ -182,10 +175,9 @@ task.spawn(function()
         if enabled and currentToolName then
             local character = lp.Character
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-            local backpack = lp:FindFirstChild("Backpack")
             
-            if humanoid and backpack then
-                local tool = backpack:FindFirstChild(currentToolName)
+            if humanoid then
+                local tool = lp.Backpack:FindFirstChild(currentToolName)
                 if tool then
                     humanoid:EquipTool(tool)
                 end
