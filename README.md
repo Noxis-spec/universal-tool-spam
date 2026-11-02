@@ -4,10 +4,17 @@ A lightweight, ultra-fast universal script designed for Roblox Mobile executors 
 
 ---
 
+## Primary Purpose
+
+* **Wall Clipping and Glitching**
+  This script is specifically designed to help players pass through walls and solid objects (wall clip) in various Roblox games by utilizing high-speed tool equipping and unequipping mechanics.
+
+---
+
 ## Core Features
 
 * **Maximum Engine Speed**
-  The spam interval is set to the absolute engine limit of 0.0001 seconds for instant execution.
+  The spam interval is set to the absolute engine limit of 0.0001 seconds for instant execution and reliable glitching.
 
 * **Live Inventory Scanner**
   The script automatically scans the backpack every second, dynamically adding new tools and removing dropped ones.
